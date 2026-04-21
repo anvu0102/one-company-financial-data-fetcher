@@ -19,7 +19,7 @@ except ImportError:
     st.stop()
     
 try:
-    from vnstock3 import Vnstock
+    from vnstock import Vnstock
 except ImportError:
     st.error("Lỗi: Thư viện 'vnstock3' chưa được cài đặt.")
     st.stop()
