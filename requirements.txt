@@ -3,7 +3,6 @@ pandas
 numpy
 matplotlib
 seaborn
-vnstock3
 google-genai
 setuptools
 pandas-datareader
@@ -11,3 +10,4 @@ openpyxl
 xlsxwriter
 tabulate
 fpdf2
+vnstock3
