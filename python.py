@@ -42,7 +42,7 @@ REPORT_TYPES = {
     'cash_flow': 'Báo cáo Lưu chuyển Tiền tệ'
 }
 PERIOD_OPTIONS = {'year': 'Theo Năm', 'quarter': 'Theo Quý'}
-SOURCE_DEFAULT = 'VCI' 
+SOURCE_DEFAULT = 'KBS' 
 
 # --- SIDEBAR DEBUG OPTION ---
 st.sidebar.header("🛠️ Cấu hình hệ thống")
@@ -76,9 +76,9 @@ def get_financial_data(symbol, period='year', source=SOURCE_DEFAULT, is_debug=Fa
             st.error(f"❌ DEBUG: Lỗi nguồn chính: {str(e)}")
             st.code(traceback.format_exc())
             
-        st.warning(f"Đang thử nguồn dự phòng 'VCI' cho {symbol}...")
+        st.warning(f"Đang thử nguồn dự phòng 'KBS' cho {symbol}...")
         try:
-            stock = Vnstock().stock(symbol=symbol, source='VCI')
+            stock = Vnstock().stock(symbol=symbol, source='KBS')
             return {key: getattr(stock.finance, key)(period=period) for key in REPORT_TYPES.keys()}
         except Exception as e_inner:
             st.error(f"Lỗi hoàn toàn: {e_inner}")
