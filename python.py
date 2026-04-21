@@ -354,7 +354,7 @@ if analysis_mode == 'Phân tích 1 Cổ phiếu':
 
     if symbol:
         
-        financial_data = get_financial_data(symbol, period=period, source=SOURCE_DEFAULT)
+        financial_data = get_financial_data(symbol, period=period)
 
         if financial_data:
             
@@ -524,7 +524,7 @@ elif analysis_mode == 'Phân tích Danh sách Cổ phiếu':
 
         if st.button(f"🔍 Tải Dữ liệu Báo cáo Tài chính cho {len(stock_list)} Mã"):
             
-            all_financial_data = get_all_financial_data(stock_list, period=period, source=SOURCE_DEFAULT)
+            all_financial_data = get_all_financial_data(stock_list, period=period)
 
             if all_financial_data:
                 st.success(f"Đã tải thành công dữ liệu cho {len(all_financial_data)} mã.")
