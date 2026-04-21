@@ -82,7 +82,7 @@ def get_financial_data(symbol, period='year'):
 
 # --- HÀM TẢI DỮ LIỆU TÀI CHÍNH TỪ VNSTOCK (CHO DANH SÁCH MÃ) ---
 @st.cache_data(show_spinner="Đang trích xuất dữ liệu Báo cáo Tài chính cho danh sách...")
-def get_all_financial_data(stock_list, period='year', source=SOURCE_DEFAULT):
+def get_all_financial_data(stock_list, period='year'):
     """
     Tải dữ liệu tài chính cho nhiều mã cổ phiếu và trả về dưới dạng dictionary.
     """
