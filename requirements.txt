@@ -10,4 +10,4 @@ openpyxl
 xlsxwriter
 tabulate
 fpdf2
-vnstock3
+vnstock
