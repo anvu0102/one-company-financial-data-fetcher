@@ -11,7 +11,7 @@ import io # Import io để xử lý BytesIO và ZIP
 
 # --- 1. IMPORT THƯ VIỆN BỔ SUNG CHO GEMINI AI ---
 try:
-    from google import genai
+    from google import genai
     from google.genai.errors import APIError
 except ImportError:
     st.error("Lỗi: Thư viện 'google-genai' chưa được cài đặt. Vui lòng chạy `pip install google-genai`.")
