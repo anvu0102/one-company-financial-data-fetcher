@@ -76,9 +76,9 @@ def get_financial_data(symbol, period='year', source=SOURCE_DEFAULT, is_debug=Fa
             st.error(f"❌ DEBUG: Lỗi nguồn chính: {str(e)}")
             st.code(traceback.format_exc())
             
-        st.warning(f"Đang thử nguồn dự phòng 'TCBS' cho {symbol}...")
+        st.warning(f"Đang thử nguồn dự phòng 'VCI' cho {symbol}...")
         try:
-            stock = Vnstock().stock(symbol=symbol, source='TCBS')
+            stock = Vnstock().stock(symbol=symbol, source='VCI')
             return {key: getattr(stock.finance, key)(period=period) for key in REPORT_TYPES.keys()}
         except Exception as e_inner:
             st.error(f"Lỗi hoàn toàn: {e_inner}")
