@@ -52,7 +52,7 @@ PERIOD_OPTIONS = {
     'year': 'Theo Năm',
     'quarter': 'Theo Quý'
 }
-SOURCE_DEFAULT = 'TCBS'
+SOURCE_DEFAULT = 'KBS'
 
 
 # --- HÀM TẢI DỮ LIỆU TÀI CHÍNH TỪ VNSTOCK (CHO 1 MÃ) ---
