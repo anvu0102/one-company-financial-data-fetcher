@@ -62,7 +62,7 @@ def get_financial_data(symbol, period='year'):
     Tải Bảng Cân đối Kế toán, Báo cáo KQKD, và Báo cáo Lưu chuyển Tiền tệ
     cho một mã cổ phiếu sử dụng Vnstock.
     """
-    st.info(f"Đang tải dữ liệu tài chính cho mã **{symbol}** (Nguồn: {source}, Kỳ: {period})...")
+    st.info(f"Đang tải dữ liệu tài chính cho mã **{symbol}** (Kỳ: {period})...")
     financial_data = {}
     
     try:
@@ -95,7 +95,7 @@ def get_all_financial_data(stock_list, period='year'):
         status_text.info(f"Đang tải dữ liệu cho mã **{symbol}** ({i + 1}/{total_stocks})...")
         # Sử dụng try-except để tránh lỗi nếu vnstock trả về None
         try:
-            data = get_financial_data(symbol, period, source)
+            data = get_financial_data(symbol, period)
             # Chỉ thêm vào nếu data hợp lệ (ví dụ: không có dataframe nào bị None/Empty)
             if data and all(df is not None and not df.empty for df in data.values()):
                 all_data[symbol] = data
