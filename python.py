@@ -52,12 +52,12 @@ PERIOD_OPTIONS = {
     'year': 'Theo Năm',
     'quarter': 'Theo Quý'
 }
-SOURCE_DEFAULT = 'KBS'
+# SOURCE_DEFAULT = 'KBS'
 
 
 # --- HÀM TẢI DỮ LIỆU TÀI CHÍNH TỪ VNSTOCK (CHO 1 MÃ) ---
 @st.cache_data(show_spinner="Đang trích xuất dữ liệu Báo cáo Tài chính...")
-def get_financial_data(symbol, period='year', source=SOURCE_DEFAULT):
+def get_financial_data(symbol, period='year'):
     """
     Tải Bảng Cân đối Kế toán, Báo cáo KQKD, và Báo cáo Lưu chuyển Tiền tệ
     cho một mã cổ phiếu sử dụng Vnstock.
@@ -66,7 +66,7 @@ def get_financial_data(symbol, period='year', source=SOURCE_DEFAULT):
     financial_data = {}
     
     try:
-        stock_api = Vnstock().stock(symbol=symbol, source=source)
+        stock_api = Vnstock().stock(symbol=symbol)
         
         financial_data['balance_sheet'] = stock_api.finance.balance_sheet(period=period)
         financial_data['income_statement'] = stock_api.finance.income_statement(period=period)
