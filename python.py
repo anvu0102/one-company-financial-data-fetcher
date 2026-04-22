@@ -19,7 +19,7 @@ except ImportError:
     st.stop()
     
 try:
-    from vnstock import Vnstock
+    from vnstock import vnstock_setup, Vnstock
     api_key = st.secrets["VNSTOCK_API_KEY"]
     vnstock_setup(api_key=api_key)
 except ImportError:
