@@ -12,4 +12,4 @@ xlsxwriter
 tabulate
 fpdf2
 yfinance
-sklearn
+scikit-learn
