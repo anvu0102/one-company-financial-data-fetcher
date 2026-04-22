@@ -19,9 +19,7 @@ except ImportError:
     st.stop()
     
 try:
-    from vnstock import vnstock_setup, Vnstock
-    api_key = st.secrets["VNSTOCK_API_KEY"]
-    vnstock_setup(api_key=api_key)
+    from vnstock import Vnstock
 except ImportError:
     st.error("Lỗi: Thư viện 'vnstock' chưa được cài đặt.")
     st.stop()
@@ -59,6 +57,8 @@ def get_financial_data(symbol, period='year', is_debug=False):
         
         try:
             stock = Vnstock().stock(symbol=symbol, source=source)
+            df = stock.quote.history(start='2024-01-01', end='2024-05-25', interval="1D")
+            print(df)
             temp_data = {}
             
             # Tải từng loại báo cáo
