@@ -57,8 +57,7 @@ def get_financial_data(symbol, period='year', is_debug=False):
         
         try:
             stock = Vnstock().stock(symbol=symbol, source=source)
-            df = stock.quote.history(start='2024-01-01', end='2024-05-25', interval="1D")
-            print(df)
+            print(stock)
             temp_data = {}
             
             # Tải từng loại báo cáo
