@@ -1,116 +1,137 @@
 import streamlit as st
 import pandas as pd
 import yfinance as yf
-import warnings
-from pandas.api.types import is_numeric_dtype
+import plotly.graph_objects as go
+import plotly.express as px
 import io
 
-# --- 1. IMPORT GENAI ---
+# --- 1. CẤU HÌNH ---
+st.set_page_config(page_title="Hệ thống Phân tích Tài chính 4.0", layout="wide")
+
+# Lấy API Key từ Secrets cho GenAI
+GEMINI_API_KEY = st.secrets.get("GEMINI_API_KEY", "")
 try:
     from google import genai
-    from google.genai import types
 except ImportError:
-    st.error("Lỗi: Thư viện 'google-genai' chưa được cài đặt. Vui lòng thêm vào requirements.txt")
-    st.stop()
+    st.error("Thiếu thư viện google-genai")
 
-# --- 2. CẤU HÌNH & THIẾT LẬP ---
-warnings.filterwarnings('ignore')
-st.set_page_config(page_title="AI Phân Tích Tài Chính", layout="wide")
+# --- 2. HÀM HỖ TRỢ DỮ LIỆU ---
+def format_ticker(symbol):
+    symbol = symbol.strip().upper()
+    return f"{symbol}.VN" if len(symbol) == 3 else symbol
 
-REPORT_TYPES = {
-    'financials': 'Báo cáo Kết quả Kinh doanh',
-    'balance_sheet': 'Bảng Cân đối Kế toán',
-    'cashflow': 'Báo cáo Lưu chuyển Tiền tệ'
-}
-
-# Lấy API Key từ Streamlit Secrets
-GEMINI_API_KEY = st.secrets.get("GEMINI_API_KEY", "")
-
-# --- 3. HÀM XỬ LÝ AI ---
-def analyze_with_ai(symbol, data_dict):
-    """Gửi dữ liệu tài chính cho Gemini để phân tích"""
-    if not GEMINI_API_KEY:
-        return "⚠️ Vui lòng cấu hình GEMINI_API_KEY trong Secrets để sử dụng tính năng này."
-    
+@st.cache_data
+def get_data(symbol, period='year'):
     try:
-        client = genai.Client(api_key=GEMINI_API_KEY)
-        
-        # Chuẩn bị dữ liệu tóm tắt để gửi cho AI (tránh quá tải token)
-        context = f"Phân tích báo cáo tài chính cho mã cổ phiếu: {symbol}\n\n"
-        for key, name in REPORT_TYPES.items():
-            df_summary = data_dict[key].iloc[:, :2] # Lấy 2 kỳ gần nhất
-            context += f"--- {name} (2 kỳ gần nhất) ---\n{df_summary.to_string()}\n\n"
-        
-        prompt = (
-            f"Bạn là một chuyên gia phân tích tài chính. Dựa trên dữ liệu sau của {symbol}, "
-            "hãy tóm tắt 3 điểm sáng và 3 rủi ro chính. Đưa ra nhận xét về sức khỏe tài chính hiện tại. "
-            "Trả lời bằng tiếng Việt, ngắn gọn, súc tích."
-        )
-        
-        response = client.models.generate_content(
-            model="gemini-2.5-flash-lite", # Hoặc gemini-2.5-flash
-            contents=[context + prompt]
-        )
-        return response.text
-    except Exception as e:
-        return f"❌ Lỗi khi gọi AI: {str(e)}"
-
-# --- 4. HÀM TẢI DỮ LIỆU ---
-@st.cache_data(show_spinner=False)
-def get_financial_data_yf(symbol, period='year'):
-    ticker_symbol = symbol.strip().upper()
-    if len(ticker_symbol) == 3:
-        ticker_symbol = f"{ticker_symbol}.VN"
-    
-    try:
-        stock = yf.Ticker(ticker_symbol)
-        temp_data = {}
+        ticker = yf.Ticker(format_ticker(symbol))
         if period == 'year':
-            temp_data['balance_sheet'] = stock.balance_sheet
-            temp_data['financials'] = stock.financials
-            temp_data['cashflow'] = stock.cashflow
+            return {
+                'is': ticker.financials,
+                'bs': ticker.balance_sheet,
+                'cf': ticker.cashflow,
+                'info': ticker.info
+            }
         else:
-            temp_data['balance_sheet'] = stock.quarterly_balance_sheet
-            temp_data['financials'] = stock.quarterly_financials
-            temp_data['cashflow'] = stock.quarterly_cashflow
-
-        if temp_data['financials'] is not None and not temp_data['financials'].empty:
-            return temp_data
-        return None
+            return {
+                'is': ticker.quarterly_financials,
+                'bs': ticker.quarterly_balance_sheet,
+                'cf': ticker.quarterly_cashflow,
+                'info': ticker.info
+            }
     except:
         return None
 
-# --- 5. GIAO DIỆN ---
-st.title("🤖 AI Phân Tích Tài Chính (Yahoo Finance + Gemini)")
+# --- 3. TÍNH NĂNG MỚI: TÍNH TOÁN CHỈ SỐ TÀI CHÍNH ---
+def calculate_ratios(data):
+    """Tính toán các chỉ số cơ bản từ báo cáo yfinance"""
+    is_df = data['is']
+    bs_df = data['bs']
+    
+    ratios = pd.DataFrame()
+    try:
+        # Ví dụ tính ROE = Net Income / Total Stockholders Equity
+        net_income = is_df.loc['Net Income']
+        equity = bs_df.loc['Stockholders Equity']
+        ratios['ROE (%)'] = (net_income / equity * 100).round(2)
+        
+        # Biên lợi nhuận gộp = Gross Profit / Total Revenue
+        ratios['Biên Lợi Nhuận Gộp (%)'] = (is_df.loc['Gross Profit'] / is_df.loc['Total Revenue'] * 100).round(2)
+        
+        # Chỉ số thanh toán hiện hành = Current Assets / Current Liabilities
+        ratios['Thanh toán hiện hành (x)'] = (bs_df.loc['Current Assets'] / bs_df.loc['Current Liabilities']).round(2)
+    except:
+        pass
+    return ratios.transpose()
 
-symbol = st.sidebar.text_input("Nhập mã cổ phiếu:", value="VNM").upper()
-period_choice = st.sidebar.radio("Kỳ báo cáo:", ['Năm', 'Quý'])
-period_code = 'year' if period_choice == 'Năm' else 'quarter'
+# --- 4. GIAO DIỆN CHÍNH ---
+st.title("🚀 Hệ thống Phân tích Tài chính Thông minh")
 
-if symbol:
-    with st.spinner(f"Đang tải dữ liệu {symbol}..."):
-        data = get_financial_data_yf(symbol, period_code)
+menu = st.sidebar.selectbox("Tính năng:", ["Phân tích chi tiết", "So sánh mã (Peer)", "AI Chatbot"])
+
+# --- FEATURE 1: PHÂN TÍCH CHI TIẾT & BIỂU ĐỒ ---
+if menu == "Phân tích chi tiết":
+    symbol = st.sidebar.text_input("Nhập mã:", "VNM")
+    period = st.sidebar.radio("Kỳ:", ["Năm", "Quý"])
+    
+    data = get_data(symbol, "year" if period == "Năm" else "quarter")
+    
+    if data and not data['is'].empty:
+        col1, col2 = st.columns([2, 1])
         
-    if data:
-        # Phần 1: Phân tích AI
-        st.subheader("🧠 Nhận định từ AI (Gemini)")
-        if st.button("🚀 Chạy phân tích AI"):
-            with st.spinner("AI đang đọc báo cáo..."):
-                analysis = analyze_with_ai(symbol, data)
-                st.info(analysis)
-        
-        # Phần 2: Hiển thị bảng biểu
-        tabs = st.tabs(["📊 Báo cáo", "🔢 Tải về"])
-        with tabs[0]:
-            for key, name in REPORT_TYPES.items():
-                with st.expander(name):
-                    st.dataframe(data[key], use_container_width=True)
-        
-        with tabs[1]:
-            output = io.BytesIO()
-            with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-                for key in REPORT_TYPES.keys():
-                    data[key].to_excel(writer, sheet_name=key[:30])
-            st.download_button("📥 Tải Excel", output.getvalue(), f"{symbol}_data.xlsx")
+        with col1:
+            st.subheader(f"Biểu đồ Doanh thu & Lợi nhuận: {symbol}")
+            # Vẽ biểu đồ Plotly
+            df_plot = data['is'].transpose()
+            fig = go.Figure()
+            fig.add_trace(go.Bar(x=df_plot.index, y=df_plot['Total Revenue'], name='Doanh thu'))
+            fig.add_trace(go.Scatter(x=df_plot.index, y=df_plot['Net Income'], name='Lợi nhuận ròng', line=dict(color='orange', width=3)))
+            st.plotly_chart(fig, use_container_width=True)
+            
+        with col2:
+            st.subheader("Chỉ số tài chính")
+            ratio_df = calculate_ratios(data)
+            st.table(ratio_df)
+
+        tabs = st.tabs(["Bảng cân đối", "Kết quả KD", "Lưu chuyển tiền"])
+        tabs[0].dataframe(data['bs'])
+        tabs[1].dataframe(data['is'])
+        tabs[2].dataframe(data['cf'])
     else:
         st.error("Không tìm thấy dữ liệu.")
+
+# --- FEATURE 2: SO SÁNH PEER COMPARISON ---
+elif menu == "So sánh mã (Peer)":
+    st.subheader("So sánh các mã cùng ngành")
+    compare_list = st.text_input("Nhập các mã (cách nhau dấu phẩy):", "VNM, MSN, SAB")
+    symbols = [s.strip() for s in compare_list.split(",")]
+    
+    comp_data = []
+    for s in symbols:
+        ticker = yf.Ticker(format_ticker(s))
+        info = ticker.info
+        comp_data.append({
+            "Mã": s,
+            "Giá": info.get("currentPrice"),
+            "P/E": info.get("trailingPE"),
+            "P/B": info.get("priceToBook"),
+            "Vốn hóa (Tỷ)": info.get("marketCap", 0) / 10**9,
+            "ROE (%)": info.get("returnOnEquity", 0) * 100
+        })
+    
+    st.table(pd.DataFrame(comp_data))
+
+# --- FEATURE 3: AI CHATBOT TƯ VẤN ---
+elif menu == "AI Chatbot":
+    st.subheader("🤖 Trợ lý ảo Gemini Finance")
+    user_q = st.text_input("Hỏi AI về cổ phiếu (VD: VNM có tốt để đầu tư dài hạn không?):")
+    
+    if st.button("Hỏi AI"):
+        if GEMINI_API_KEY:
+            client = genai.Client(api_key=GEMINI_API_KEY)
+            response = client.models.generate_content(
+                model="gemini-2.0-flash",
+                contents=[f"Dựa trên kiến thức tài chính, hãy trả lời: {user_q}"]
+            )
+            st.markdown(response.text)
+        else:
+            st.warning("Vui lòng cấu hình API Key.")
