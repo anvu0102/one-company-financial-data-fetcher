@@ -10,7 +10,6 @@ import io
 warnings.filterwarnings('ignore')
 st.set_page_config(page_title="AI Financial Intelligence Pro", layout="wide")
 
-# Lấy API Key từ Streamlit Secrets
 GEMINI_API_KEY = st.secrets.get("GEMINI_API_KEY", "")
 
 REPORT_TYPES = {
@@ -19,7 +18,7 @@ REPORT_TYPES = {
     'cashflow': 'Báo cáo Lưu chuyển Tiền tệ'
 }
 
-# --- 2. HÀM XỬ LÝ DỮ LIỆU (SỬA LỖI CACHE) ---
+# --- 2. HÀM XỬ LÝ DỮ LIỆU ---
 @st.cache_resource(show_spinner=False)
 def get_full_stock_data(symbol):
     ticker_symbol = symbol.strip().upper()
@@ -28,7 +27,6 @@ def get_full_stock_data(symbol):
     
     try:
         stock = yf.Ticker(ticker_symbol)
-        # Lấy lịch sử giá 1 năm cho kỹ thuật
         hist = stock.history(period="1y")
         if hist.empty: return None
         
@@ -48,13 +46,11 @@ def get_full_stock_data(symbol):
 
 def calculate_indicators(df):
     df = df.copy()
-    # RSI
     delta = df['Close'].diff()
     gain = (delta.where(delta > 0, 0)).rolling(window=14).mean()
     loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
     rs = gain / (loss + 1e-9)
     df['RSI'] = 100 - (100 / (1 + rs))
-    # MA
     df['MA20'] = df['Close'].rolling(window=20).mean()
     df['MA50'] = df['Close'].rolling(window=50).mean()
     return df
@@ -85,7 +81,6 @@ def analyze_with_ai(symbol, data_dict, info, tech_data):
 # --- 4. GIAO DIỆN ---
 st.title("🚀 AI Financial & Trading Intelligence")
 
-# Sidebar
 symbol = st.sidebar.text_input("Nhập mã cổ phiếu (VD: FPT, VNM, AAPL):", value="FPT").upper()
 period_choice = st.sidebar.radio("Kỳ báo cáo tài chính:", ['Năm', 'Quý'])
 period_suffix = '_y' if period_choice == 'Năm' else '_q'
@@ -98,7 +93,7 @@ if symbol:
         info = data['info']
         hist = data['hist']
         
-        # --- HEADER METRICS ---
+        # HEADER METRICS
         c1, c2, c3, c4 = st.columns(4)
         curr_price = info.get('currentPrice', hist['Close'].iloc[-1])
         c1.metric("Giá hiện tại", f"{curr_price:,.0f}", f"{info.get('targetMeanPrice', 0):,.0f} (Target)")
@@ -106,14 +101,12 @@ if symbol:
         c3.metric("P/E", f"{info.get('trailingPE', 'N/A')}")
         c4.metric("ROE", f"{info.get('returnOnEquity', 0)*100:.2f}%")
 
-        # --- TABS ---
         t1, t2, t3, t4 = st.tabs(["📈 Biểu đồ kỹ thuật", "🧠 AI Analysis", "📊 Báo cáo tài chính", "👥 So sánh & Tin tức"])
 
         with t1:
             df_plot = calculate_indicators(hist)
             fig = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.05, 
                                row_heights=[0.7, 0.3], subplot_titles=("Giá & MA", "RSI"))
-            
             fig.add_trace(go.Candlestick(x=df_plot.index, open=df_plot['Open'], high=df_plot['High'], 
                                        low=df_plot['Low'], close=df_plot['Close'], name="Giá"), row=1, col=1)
             fig.add_trace(go.Scatter(x=df_plot.index, y=df_plot['MA20'], name="MA20", line=dict(color='orange')), row=1, col=1)
@@ -136,7 +129,6 @@ if symbol:
                 with st.expander(name):
                     st.dataframe(df_report, use_container_width=True)
             
-            # Download Excel
             output = io.BytesIO()
             with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
                 for key in REPORT_TYPES.keys():
@@ -147,19 +139,25 @@ if symbol:
             col_a, col_b = st.columns(2)
             with col_a:
                 st.subheader("So sánh chỉ số")
+                # --- FIX LỖI ARROWINVALID TẠI ĐÂY ---
                 compare_data = {
                     "Chỉ số": ["P/E", "P/B", "EV/EBITDA", "Biên LN Gộp"],
-                    "Giá trị": [info.get('trailingPE', 'N/A'), info.get('priceToBook', 'N/A'), 
-                               info.get('enterpriseToEbitda', 'N/A'), f"{info.get('grossMargins', 0)*100:.2f}%"]
+                    "Giá trị": [
+                        str(info.get('trailingPE', 'N/A')), 
+                        str(info.get('priceToBook', 'N/A')), 
+                        str(info.get('enterpriseToEbitda', 'N/A')), 
+                        f"{info.get('grossMargins', 0)*100:.2f}%"
+                    ]
                 }
-                st.table(pd.DataFrame(compare_data))
+                # Ép kiểu toàn bộ cột sang string để tránh lỗi mix types
+                df_compare = pd.DataFrame(compare_data).astype(str)
+                st.table(df_compare)
             
             with col_b:
                 st.subheader("Tin tức mới nhất")
                 news = data['stock'].news
                 if news:
                     for item in news[:5]:
-                        # SỬA LỖI KEYERROR: Sử dụng .get() để an toàn
                         title = item.get('title', 'Không có tiêu đề')
                         link = item.get('link', '#')
                         publisher = item.get('publisher', 'Nguồn không xác định')
@@ -169,4 +167,4 @@ if symbol:
                 else:
                     st.write("Không tìm thấy tin tức mới.")
     else:
-        st.error("Không tìm thấy dữ liệu. Hãy kiểm tra lại mã cổ phiếu (Ví dụ: VNM, FPT, HPG).")
+        st.error("Không tìm thấy dữ liệu. Hãy kiểm tra lại mã cổ phiếu.")
