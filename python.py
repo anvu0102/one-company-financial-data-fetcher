@@ -20,6 +20,8 @@ except ImportError:
     
 try:
     from vnstock import Vnstock
+    api_key = st.secrets["VNSTOCK_API_KEY"]
+    vnstock_setup(api_key=api_key)
 except ImportError:
     st.error("Lỗi: Thư viện 'vnstock' chưa được cài đặt.")
     st.stop()
