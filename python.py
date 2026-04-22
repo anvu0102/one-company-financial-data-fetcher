@@ -15,7 +15,7 @@ st.set_page_config(page_title="AI Trading Intelligence", layout="wide")
 GEMINI_API_KEY = st.secrets.get("GEMINI_API_KEY", "")
 
 # --- 2. HÀM XỬ LÝ DỮ LIỆU ---
-@st.cache_data(show_spinner=False)
+@st.cache_resource(show_spinner=False) # Đổi từ cache_data sang cache_resource
 def get_stock_data(symbol):
     ticker_symbol = symbol.strip().upper()
     if len(ticker_symbol) == 3: ticker_symbol = f"{ticker_symbol}.VN"
