@@ -51,7 +51,7 @@ def calculate_indicators(df):
     df['MA50'] = df['Close'].rolling(window=50).mean() # Đường MA50
     return df
 
-# --- 3. AI ANALYSIS (GEMINI-2.5-FLASH-LITE) ---
+# --- 3. AI ANALYSIS (GEMINI-3.6-FLASH) ---
 def analyze_with_ai(symbol, data_dict, info, tech_data):
     if not GEMINI_API_KEY: return "⚠️ Thiếu API Key trong Secrets."
     try:
@@ -64,7 +64,7 @@ def analyze_with_ai(symbol, data_dict, info, tech_data):
             f"Tài chính:\n{data_dict['financials'].iloc[:, :2].to_string()}"
         )
         response = client.models.generate_content(
-            model="gemini-2.5-flash-lite", 
+            model="gemini-3.6-flash", 
             contents=[f"Phân tích chuyên sâu cổ phiếu sau dựa trên cả kỹ thuật và cơ bản: {context}"]
         )
         return response.text
@@ -124,7 +124,7 @@ if symbol:
             st.plotly_chart(fig, use_container_width=True)
 
         with tabs[1]:
-            st.subheader("🤖 Phân tích bởi Gemini 2.5 Flash-Lite")
+            st.subheader("🤖 Phân tích bởi Gemini 3.6 Flash")
             if st.button("🚀 Thực hiện nhận định"):
                 current_fin = { 'financials': data[f'financials{suffix}'] }
                 with st.spinner("AI đang đọc dữ liệu..."):
